@@ -27,7 +27,7 @@
 
 ### 直接用（Windows）
 
-到 [Releases](../../releases) 下载 `BadAppleStudio.zip`，解压后双击 `BadAppleStudio.exe`。首次启动会自动在程序旁边建好素材目录：
+到 [Releases](https://github.com/Luo-Jacob/badapple-studio/releases) 下载 `BadAppleStudio.zip`，解压后双击 `BadAppleStudio.exe`。首次启动会自动在程序旁边建好素材目录：
 
 ```
 BadAppleStudio\
