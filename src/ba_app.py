@@ -135,6 +135,7 @@ class App(object):
         self._card_source()
         self._card_mode()
         self._card_fill()
+        self._card_audio()
         self._card_key_simple()
         self._card_recolor()
         self._card_fmt()
@@ -143,8 +144,8 @@ class App(object):
         self._card_out(right)
         self._card_log(right)
         self._left_cards = [self.card_source, self.card_mode, self.card_fill,
-                            self.card_key, self.card_recolor, self.card_fmt,
-                            self.card_adv]
+                            self.card_audio, self.card_key, self.card_recolor,
+                            self.card_fmt, self.card_adv]
         self.var_mode.set("overlay")
         self._relayout_left()
 
@@ -223,9 +224,81 @@ class App(object):
         RoundButton(row, text="⇄ 交换 A / B", kind="ghost", width=100,
                     command=self._swap_ab, bg=CARD).pack(side="left", pady=(8, 0))
 
-    # ---------------- ④ 透明目标（简洁） ----------------
+    # ---------------- ④ 声音 ----------------
+    def _card_audio(self):
+        self.card_audio = c = self._card(self.left, "④ 用谁的声音")
+        self.var_audio_lab = tk.StringVar()
+        cb = ttk.Combobox(c.body, textvariable=self.var_audio_lab, font=FONT,
+                          state="readonly")
+        cb.pack(fill="x")
+        cb.bind("<<ComboboxSelected>>", self._on_audio_pick)
+        self.combo_audio = cb
+        self.var_audio_desc = tk.StringVar(value="")
+        self._hint(c.body, "", self.var_audio_desc).pack(anchor="w", pady=(6, 0))
+
+    def _audio_options(self):
+        """按当前片源/素材生成声音选项：[(显示名, 值)]"""
+        mode = self.var_mode.get()
+        if mode == "alpha":
+            return [("透明素材不带声音", "none")]
+
+        def tag(path, info):
+            if not path:
+                return ""
+            name = os.path.splitext(os.path.basename(path))[0]
+            return name + ("" if info.get("has_audio") else "（无音轨）")
+
+        fg_name = tag(self.var_fg.get(), self.fg_info)
+        opts = [("Bad Apple 原声" + ("（%s）" % fg_name if fg_name else ""), "fg")]
+        if mode in ("overlay", "dual"):
+            if self.var_bg.get():
+                opts.append(("素材 A 的声音（%s）" % tag(self.var_bg.get(), self.bg_info), "bg"))
+        if mode == "dual":
+            if self.var_bg2.get():
+                opts.append(("素材 B 的声音（%s）" % tag(self.var_bg2.get(), self.bg2_info), "bg2"))
+        voices = [k for k in ("fg", "bg", "bg2")
+                  if (self.fg_info if k == "fg" else
+                      self.bg_info if k == "bg" else self.bg2_info).get("has_audio")]
+        if len(voices) >= 2:
+            opts.append(("全部混在一起", "mix"))
+        opts.append(("不要声音", "none"))
+        return opts
+
+    def _refresh_audio_options(self):
+        if not hasattr(self, "combo_audio"):
+            return
+        opts = self._audio_options()
+        self._audio_lab2val = {lab: val for lab, val in opts}
+        self._audio_val2lab = {val: lab for lab, val in opts}
+        self.combo_audio["values"] = [lab for lab, _ in opts]
+        cur = self.var_audio.get()
+        if cur not in self._audio_val2lab:
+            cur = "fg" if "fg" in self._audio_val2lab else "none"
+            self.var_audio.set(cur)
+        self.var_audio_lab.set(self._audio_val2lab[cur])
+        self._describe_audio(cur)
+
+    def _describe_audio(self, val):
+        txt = {
+            "fg": "用 Bad Apple 片源自己的声音",
+            "bg": "用素材 A 的声音（片源原声会被丢掉）",
+            "bg2": "用素材 B 的声音（片源原声会被丢掉）",
+            "mix": "把各路声音混在一起",
+            "none": "输出没有声音",
+        }.get(val, "")
+        has = {"fg": self.fg_info, "bg": self.bg_info, "bg2": self.bg2_info}.get(val)
+        if val in ("fg", "bg", "bg2") and has is not None and not has.get("has_audio"):
+            txt += "；所选素材没有音轨，实际会回退到片源原声（若也没有则静音）"
+        self.var_audio_desc.set(txt)
+
+    def _on_audio_pick(self, _e=None):
+        val = self._audio_lab2val.get(self.var_audio_lab.get(), "fg")
+        self.var_audio.set(val)
+        self._describe_audio(val)
+
+    # ---------------- ⑤ 透明目标（简洁） ----------------
     def _card_key_simple(self):
-        self.card_key = c = self._card(self.left, "④ 把哪种颜色变透明")
+        self.card_key = c = self._card(self.left, "⑤ 把哪种颜色变透明")
         box = tk.Frame(c.body, bg=CARD)
         box.pack(fill="x")
         for txt, val in (("黑色变透明（留白剪影）", "black"),
@@ -296,12 +369,6 @@ class App(object):
                         [("按 Bad Apple 全长（素材循环）", "loop_bg"),
                          ("取较短的那个", "shortest"),
                          ("按素材长度（Bad Apple 循环）", "loop_fg")])
-        self._combo_row(g2, "声音", self.var_audio, 1,
-                        [("保留 Bad Apple 原声", "fg"),
-                         ("用素材 A 的声音", "bg"),
-                         ("用素材 B 的声音", "bg2"),
-                         ("全部混在一起", "mix"),
-                         ("不要声音", "none")])
         # 画质
         self._title(c.body, "画质与速度")
         g3 = tk.Frame(c.body, bg=CARD)
@@ -588,6 +655,7 @@ class App(object):
             self.sld_time.configure(to=max(1.0, dur))
             self.var_time.set(min(self.var_time.get(), max(0.0, dur)))
             self._refresh_mode_ui()
+            self._refresh_audio_options()
             self._schedule_preview()
         else:
             self.var_fg_desc.set("读取失败：" + (self.fg_info.get("error") or "未知错误"))
@@ -596,11 +664,13 @@ class App(object):
         self.bg_info = core.probe(self.var_bg.get()) if self.var_bg.get() else {}
         self.var_bg_desc.set(core.describe(self.var_bg.get()) if self.var_bg.get()
                              else "未选择（黑色部分保持纯黑）")
+        self._refresh_audio_options()
 
     def _refresh_bg2(self):
         self.bg2_info = core.probe(self.var_bg2.get()) if self.var_bg2.get() else {}
         self.var_bg2_desc.set(core.describe(self.var_bg2.get()) if self.var_bg2.get()
                               else "未选择（白色部分保持白色剪影）")
+        self._refresh_audio_options()
 
     # ------------------------------------------------------------------
     # 交互
@@ -617,6 +687,8 @@ class App(object):
         show = []
         if mode in ("overlay", "dual"):
             show.append(self.card_fill)
+        if mode != "alpha":
+            show.append(self.card_audio)
         if mode in ("overlay", "alpha"):
             show.append(self.card_key)
         if mode == "recolor":
@@ -639,6 +711,7 @@ class App(object):
             self.row_bg2.pack(fill="x", pady=(10, 0), before=self.row_swap)
         else:
             self.row_bg2.pack_forget()
+        self._refresh_audio_options()
         self.root.update_idletasks()
 
     def _refresh_mode_ui(self):
@@ -690,6 +763,7 @@ class App(object):
         self.var_preset.set("veryfast")
         self.var_dur.set("loop_bg")
         self.var_audio.set("fg")
+        self._refresh_audio_options()
         self._schedule_preview()
 
     def _step(self, dt):

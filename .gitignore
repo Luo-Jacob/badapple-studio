@@ -19,6 +19,13 @@ __pycache__/
 *.pyo
 .buildenv/
 
+# ---- 测试跑出来的媒体（脚本自己会造，不入库）----
+build/*.mp4
+build/*.gif
+build/*.mkv
+build/*.png
+build/*.wav
+
 # ---- 打包出的程序（exe 走 GitHub Release，不进 git）----
 BadAppleStudio/
 *.exe
