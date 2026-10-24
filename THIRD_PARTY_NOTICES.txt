@@ -1,0 +1,22 @@
+Bad Apple Studio  第三方组件说明
+=================================
+
+本程序自身代码以外，随程序分发的第三方组件如下：
+
+1) FFmpeg
+   - 二进制来源：imageio-ffmpeg 0.6.0 自带的静态构建
+   - 版本：ffmpeg 7.1-essentials_build-www.gyan.dev
+   - 文件：<程序目录>\BadAppleStudio\_internal\ffmpeg_bin\ffmpeg-win-x86_64-v7.1.exe
+   - 许可证：FFmpeg 该构建含 libx264 等组件，属于 GPL v2（或更新）
+   - 源码获取：https://ffmpeg.org  /  https://github.com/imageio/imageio-ffmpeg
+   - 注意：如需二次分发本程序，请遵循对应许可证要求提供源码或源码获取方式
+
+2) Python 及运行时库
+   - Python 3.13、Tk/Tcl、Pillow 等随 PyInstaller 一并打包
+   - 许可证：PSF / TCL / HPND 等各自的开源许可
+
+片源版权提示
+------------
+assets 目录中的 Bad Apple 影绘视频属于网络上的二次创作作品，版权归原作者所有。
+本程序不包含也不分发该视频；请仅在本机个人学习/非商业范围内使用，
+不要将视频随程序一同对外分发。
